@@ -1,6 +1,7 @@
 ---
 name: plugin-cross-orchestrator
 description: Orchestrates a complete agent plugin cross compatibility workflow across GitHub Copilot CLI, VS Code, Claude Code, and OpenAI Codex. Use when the user wants to audit, fix, make compatible, or add installation badges to an agent plugin.
+tools: [vscode/askQuestions, execute, read, edit]
 ---
 
 # Plugin cross compatibility orchestrator
@@ -11,6 +12,7 @@ Coordinate the bundled compatibility skills from initial audit through final ver
 
 1. Use the plugin directory supplied by the user when present.
 2. Otherwise, locate the most likely plugin root in the current workspace by finding `plugin.json`.
+   - If no `plugin.json` is found and the user did not supply a directory, stop and ask the user for the plugin root path. Do not run the audit until a root is confirmed.
 3. Show the resolved root and ask the user to confirm it before running the workflow. If multiple roots are plausible, ask the user to choose one.
 4. Treat installed copies and cache directories as read-only. Auditing them is allowed, but never attempt to fix them.
 
@@ -21,6 +23,7 @@ Coordinate the bundled compatibility skills from initial audit through final ver
    - Exit code `1` means the audit completed and found errors; continue to reporting.
    - Any other nonzero exit code is an execution failure; stop and explain it.
 2. Read `.compat-report.json` and present findings grouped as `error`, `warning`, and `info`. For every finding with a fix, show the proposed `move`, `link`, or `replace-identical` action. Explain findings without an automatic fix and wait for a manual decision rather than improvising a change.
+   - If `.compat-report.json` is missing, unreadable, or malformed, stop, report the problem with the file path, and do not proceed to the dry-run.
 3. Follow `plugin-cross-fix` to run its dry-run. Show the planned, skipped, and conflicting actions.
 4. Ask for explicit approval before applying any compatibility fix. Do not infer approval from the original request.
 5. If the plan contains `replace-identical`, ask for separate approval before enabling that action.
@@ -37,6 +40,12 @@ Keep these decisions independent:
 - Adding README installation badges.
 
 A refusal at one boundary does not imply approval at another. Dry-runs and audits may continue without write approval.
+
+## Tools instructions
+
+- vscode/askQuestions: Use this tool to ask the user questions and get their input during the workflow. Fallback to chat if the tool is unavailable.
+- Run skill scripts with the terminal or execute tool. If command execution is unavailable, stop and tell the user which command to run manually; ask them to provide its exit code and the contents of `.compat-report.json`. Never assume or invent command results, exit codes, or audit findings.
+
 
 ## Final report
 

@@ -173,16 +173,16 @@ test('components: agent without name, skill name mismatch, camelCase hook', () =
 
 test('repository ships the orchestrator agent and command through relative links', () => {
   const agentPath = path.join(repo, 'agents/plugin-cross-orchestrator.agent.md');
-  const commandPath = path.join(repo, 'commands/plugin-cross.md');
+  const commandPath = path.join(repo, 'commands/plugin-cross.prompt.md');
   const agentLink = path.join(repo, 'com.github.copilot/agents/plugin-cross-orchestrator.agent.md');
-  const commandLink = path.join(repo, 'com.github.copilot/commands/plugin-cross.md');
+  const commandLink = path.join(repo, 'com.github.copilot/commands/plugin-cross.prompt.md');
 
   assert.match(fs.readFileSync(agentPath, 'utf8'), /^---\nname: plugin-cross-orchestrator\n/);
   assert.match(fs.readFileSync(commandPath, 'utf8'), /plugin-cross-orchestrator/);
   assert.ok(fs.lstatSync(agentLink).isSymbolicLink());
   assert.equal(fs.readlinkSync(agentLink), '../../agents/plugin-cross-orchestrator.agent.md');
   assert.ok(fs.lstatSync(commandLink).isSymbolicLink());
-  assert.equal(fs.readlinkSync(commandLink), '../../commands/plugin-cross.md');
+  assert.equal(fs.readlinkSync(commandLink), '../../commands/plugin-cross.prompt.md');
 });
 
 test('readme badge is added once and detected afterwards', () => {
