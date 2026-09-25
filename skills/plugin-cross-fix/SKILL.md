@@ -1,13 +1,13 @@
 ---
-name: plugin-compat-fix
-description: Applies the move and symlink fixes proposed by plugin-compat-audit after the user explicitly approves them. Dry-run by default, never overwrites or deletes diverging files, and refuses installed plugin copies. Use only after an audit report exists and the user said yes.
+name: plugin-cross-fix
+description: Applies the move and symlink fixes proposed by plugin-cross-audit after the user explicitly approves them. Dry-run by default, never overwrites or deletes diverging files, and refuses installed plugin copies. Use only after an audit report exists and the user said yes.
 compatibility: Requires Node.js 18+. git is optional (used for git mv). No network access.
 metadata:
   author: andrefontourainvillia
   version: "0.1.0"
 ---
 
-# Plugin compatibility fix
+# Plugin cross compatibility fix
 
 Turns an approved audit report into file moves and relative per-file symlinks.
 
@@ -28,7 +28,7 @@ Turns an approved audit report into file moves and relative per-file symlinks.
    node scripts/fix.mjs --report <plugin-dir>/.compat-report.json --apply --confirm
    ```
    Add `--replace-identical` only if the user approved replacing identical duplicates.
-4. Re-run `plugin-compat-audit` and show the result.
+4. Re-run `plugin-cross-audit` and show the result.
 
 ## Order of actions
 

@@ -7,12 +7,12 @@ import { cli, fail, warn, EXIT } from '../../../lib/report.mjs';
 
 const USAGE = `Usage: node scripts/fix.mjs --report <file> [--apply --confirm] [--replace-identical] [--output <file>|-]
 
-Applies the move/link fixes proposed by plugin-compat-audit. Dry-run by
+Applies the move/link fixes proposed by plugin-cross-audit. Dry-run by
 default: prints the planned actions and changes nothing. Never overwrites or
 deletes a file that differs from its canonical source.
 
 Options:
-  --report FILE          Report produced by plugin-compat-audit (required)
+  --report FILE          Report produced by plugin-cross-audit (required)
   --apply                Perform the actions (requires --confirm)
   --confirm              Confirms the user approved the planned actions
   --replace-identical    Also replace real duplicates that are byte-identical to the source
@@ -35,7 +35,7 @@ const args = cli({
 
 if (!args.report) fail(EXIT.INVALID_ARGS, `--report is required.\n\n${USAGE}`);
 if (args.apply && !args.confirm) fail(EXIT.INVALID_ARGS, '--apply requires --confirm. Show the dry-run to the user and get explicit approval first.');
-if (!fs.existsSync(args.report)) fail(EXIT.NOT_FOUND, `report not found: ${args.report}. Run plugin-compat-audit first.`);
+if (!fs.existsSync(args.report)) fail(EXIT.NOT_FOUND, `report not found: ${args.report}. Run plugin-cross-audit first.`);
 
 let report;
 try {
@@ -44,7 +44,7 @@ try {
   fail(EXIT.INVALID_ARGS, `report is not valid JSON: ${err.message}`);
 }
 if (typeof report.root !== 'string' || !Array.isArray(report.findings)) {
-  fail(EXIT.INVALID_ARGS, 'report must contain "root" and "findings". Regenerate it with plugin-compat-audit.');
+  fail(EXIT.INVALID_ARGS, 'report must contain "root" and "findings". Regenerate it with plugin-cross-audit.');
 }
 
 const root = report.root;
@@ -138,12 +138,12 @@ for (const fix of safe.filter((f) => !['move', 'link', 'replace-identical'].incl
 }
 
 const summary = actions.reduce((acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }), {});
-const result = JSON.stringify({ tool: 'plugin-compat-fix', root, mode, summary, actions }, null, 2);
+const result = JSON.stringify({ tool: 'plugin-cross-fix', root, mode, summary, actions }, null, 2);
 if (args.output && args.output !== '-') {
   fs.writeFileSync(args.output, `${result}\n`);
-  process.stdout.write(`${JSON.stringify({ tool: 'plugin-compat-fix', root, mode, summary, output: args.output })}\n`);
+  process.stdout.write(`${JSON.stringify({ tool: 'plugin-cross-fix', root, mode, summary, output: args.output })}\n`);
 } else {
   process.stdout.write(`${result}\n`);
 }
-if (mode === 'apply' && summary.done) warn('Re-run plugin-compat-audit to confirm the plugin is clean.');
+if (mode === 'apply' && summary.done) warn('Re-run plugin-cross-audit to confirm the plugin is clean.');
 process.exitCode = conflicts > 0 ? EXIT.CONFLICT : EXIT.OK;

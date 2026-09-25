@@ -10,32 +10,52 @@ Clique no botão abaixo correspondente a sua edição do VS Code e confirme o pr
 
 [![Instalar Plugin de Chat no VS Code Insiders](https://img.shields.io/badge/Instalar_Plugin_de_Chat-VS_Code_Insiders-24BFA5)](vscode-insiders://chat-plugin/install?source=andrefontourainvillia/cross-compatible-plugin)
 
+## Execução orquestrada
+
+O slash command inicia o fluxo completo com um caminho opcional:
+
+```text
+/plugin-cross ../meu-plugin
+/plugin-cross
+```
+
+Sem caminho, o agente `plugin-cross-orchestrator` detecta a raiz mais provável no workspace e pede confirmação. Ele coordena as skills de auditoria, correção e badges, mas mantém aprovações separadas para aplicar correções, substituir duplicatas idênticas e alterar o README.
+
 ## Como o plugin se comporta
 
-O fluxo tem quatro etapas e nunca altera arquivos sem aprovação explícita:
+O fluxo nunca altera arquivos sem aprovação explícita:
 
 ```mermaid
 flowchart LR
-  A[plugin-compat-audit] -->|relatório| B{Usuário aprova?}
-  B -- não --> Z[Nada é alterado]
-  B -- sim --> C[plugin-compat-fix --apply --confirm]
-  C --> D[plugin-compat-audit de novo]
+  A[Auditoria] --> B[Relatório e dry-run]
+  B --> C{Aprova correções?}
+  C -- não --> D[Reauditoria]
+  C -- sim --> E[Aplicar correções]
+  E --> D
+  D --> F[Preview dos badges]
+  F --> G{Aprova README?}
+  G -- não --> H[Relatório final]
+  G -- sim --> I[Adicionar badges]
+  I --> H
 ```
 
-1. **Auditoria** (`plugin-compat-audit`): roda os três validadores e grava `.compat-report.json`.
+1. **Auditoria** (`plugin-cross-audit`): roda os três validadores e grava `.compat-report.json`.
 2. **Relatório**: o agente mostra os findings por gravidade (`error`, `warning`, `info`) e as correções propostas.
 3. **Aprovação**: o agente mostra o dry-run da correção e espera um "sim" explícito.
-4. **Correção** (`plugin-compat-fix`): move os arquivos para a fonte canônica, cria links relativos por arquivo e roda a auditoria de novo.
+4. **Correção** (`plugin-cross-fix`): move os arquivos para a fonte canônica, cria links relativos por arquivo e roda a auditoria de novo.
+5. **Badges** (`readme-install-badge`): mostra um preview, confirma o repositório e pede uma nova aprovação antes de alterar o README.
+
+O agente e o comando têm fontes canônicas em `agents/` e `commands/`. Claude Code lê essas fontes; Copilot CLI e VS Code usam os links em `com.github.copilot/`.
 
 ## Skills
 
 | Skill | Função | Altera arquivos? |
 |---|---|---|
-| `plugin-compat-audit` | Orquestra os validadores e consolida o relatório | Não (só grava o relatório) |
+| `plugin-cross-audit` | Orquestra os validadores e consolida o relatório | Não (só grava o relatório) |
 | `validate-manifest` | `plugin.json` e `mcp.json` contra o Agent Plugins 1.0 | Não |
 | `validate-links` | Links por arquivo, duplicatas, links quebrados, absolutos ou para fora da raiz | Não |
 | `validate-components` | Frontmatter de agentes, nomes de skills, eventos de hooks, arquivos de instruções | Não |
-| `plugin-compat-fix` | Aplica `move`, `link` e `replace-identical` do relatório | Sim, com `--apply --confirm` |
+| `plugin-cross-fix` | Aplica `move`, `link` e `replace-identical` do relatório | Sim, com `--apply --confirm` |
 | `readme-install-badge` | Adiciona os botões de instalação no README | Sim, com `--apply` |
 
 Todas as regras ficam em [lib/compat-rules.mjs](lib/compat-rules.mjs), e o formato do relatório em [lib/report.mjs](lib/report.mjs).
@@ -66,7 +86,7 @@ Regras de compatibilidade aplicadas:
 
 ## Guardrails
 
-1. **Nenhuma alteração sem o OK explícito do usuário.** Os scripts de correção rodam em dry-run por padrão. `plugin-compat-fix` exige `--apply --confirm`.
+1. **Nenhuma alteração sem o OK explícito do usuário.** Os scripts de correção rodam em dry-run por padrão. `plugin-cross-fix` exige `--apply --confirm`.
 2. **Nunca sobrescreve e nunca apaga arquivos divergentes.** Conflitos são reportados (código 5). Duplicatas byte a byte idênticas só viram link com `--replace-identical`.
 3. **Links sempre relativos, por arquivo e dentro da raiz do plugin.** Links de pasta, absolutos ou que saem da raiz são erros.
 4. **Recusa cópias instaladas ou em cache** (`~/.vscode*/agent-plugins`, `~/.copilot/installed-plugins`, `~/.claude/plugins/cache`, …): código 4. A auditoria dessas cópias é permitida, com aviso.
@@ -88,9 +108,9 @@ Regras de compatibilidade aplicadas:
 ## Uso rápido
 
 ```bash
-node skills/plugin-compat-audit/scripts/aggregate.mjs --root ../meu-plugin
-node skills/plugin-compat-fix/scripts/fix.mjs --report ../meu-plugin/.compat-report.json
-node skills/plugin-compat-fix/scripts/fix.mjs --report ../meu-plugin/.compat-report.json --apply --confirm
+node skills/plugin-cross-audit/scripts/aggregate.mjs --root ../meu-plugin
+node skills/plugin-cross-fix/scripts/fix.mjs --report ../meu-plugin/.compat-report.json
+node skills/plugin-cross-fix/scripts/fix.mjs --report ../meu-plugin/.compat-report.json --apply --confirm
 node skills/readme-install-badge/scripts/add-badge.mjs --root ../meu-plugin --apply
 ```
 
@@ -99,7 +119,7 @@ Requisitos: Node.js 18+. O git é opcional (usado para `git mv` e para detectar 
 ## Limitações conhecidas
 
 - **`tools` no frontmatter**: nomes como `vscode/memory` são do VS Code/Copilot. No Claude Code, `tools` funciona como allowlist, então o agente pode perder ferramentas. A skill avisa, mas não corrige.
-- **Codex**: não lê `agents/*.md` (usa TOML próprio). Manifesto e skills funcionam.
+- **Codex**: não lê os agentes e comandos Markdown deste plugin (usa TOML próprio para agentes). Manifesto e skills funcionam.
 - **Symlinks não documentados**: nenhuma documentação cobre como o Codex trata um manifesto por link, nem como o Copilot e o VS Code tratam links ao instalar via git. Valide com uma instalação real.
 - **Windows**: com `core.symlinks=false`, os links viram arquivos de texto (`validate-links` avisa).
 - **LSP**: os formatos diferem por cliente, então este plugin não tenta unificá-los.

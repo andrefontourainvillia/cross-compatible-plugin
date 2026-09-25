@@ -1,5 +1,5 @@
 ---
-name: plugin-compat-audit
+name: plugin-cross-audit
 description: Audits an agent plugin for cross-client compatibility (GitHub Copilot CLI, VS Code agent plugins, Claude Code, OpenAI Codex), reports every issue, and after explicit user approval applies the fixes. Use when the user asks to check, validate, audit, make compatible or "DRY" a plugin, or mentions plugin.json, .claude-plugin, .codex-plugin, com.github.copilot or symlinks.
 compatibility: Requires Node.js 18+. git is optional. No network access.
 metadata:
@@ -7,7 +7,7 @@ metadata:
   version: "0.1.0"
 ---
 
-# Plugin compatibility audit
+# Plugin cross compatibility audit
 
 Orchestrates the validators, shows a single report to the user, and only
 changes files after the user explicitly approves.
@@ -33,9 +33,9 @@ changes files after the user explicitly approves.
    For each finding with a `fix`, show what would happen (`move`, `link`, `replace-identical`).
 4. Show the dry-run of the fix and **ask the user for explicit approval**. Do not continue without it:
    ```bash
-   node ../plugin-compat-fix/scripts/fix.mjs --report <plugin-dir>/.compat-report.json
+   node ../plugin-cross-fix/scripts/fix.mjs --report <plugin-dir>/.compat-report.json
    ```
-5. Only after approval, follow the `plugin-compat-fix` skill to apply the fixes.
+5. Only after approval, follow the `plugin-cross-fix` skill to apply the fixes.
 6. Re-run step 2 and report the final state.
 
 ## Rules

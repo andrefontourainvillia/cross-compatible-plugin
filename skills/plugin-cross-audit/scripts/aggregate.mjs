@@ -46,7 +46,7 @@ for (const name of validators) {
 const order = { error: 0, warning: 1, info: 2 };
 findings.sort((a, b) => order[a.severity] - order[b.severity] || a.path.localeCompare(b.path));
 const output = args.output ?? path.join(root, '.compat-report.json');
-process.exitCode = emit('plugin-compat-audit', root, findings, {
+process.exitCode = emit('plugin-cross-audit', root, findings, {
   output,
   extra: { generatedAt: new Date().toISOString(), validators },
 });

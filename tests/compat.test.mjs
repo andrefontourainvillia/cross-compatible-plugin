@@ -38,6 +38,7 @@ test('good plugin passes every validator', () => {
       'plugin.json': { $schema: SCHEMA, name: 'good' },
       'mcp.json': { $schema: MCP, mcpServers: { docs: { type: 'streamable-http', url: 'https://example.com/mcp' } } },
       'agents/helper.agent.md': agent('helper'),
+      'commands/run.md': 'Run the compatibility workflow.\n',
       'skills/demo/SKILL.md': '---\nname: demo\ndescription: Demo skill.\n---\n',
     },
     {
@@ -45,6 +46,7 @@ test('good plugin passes every validator', () => {
       '.codex-plugin/plugin.json': '../plugin.json',
       '.mcp.json': 'mcp.json',
       'com.github.copilot/agents/helper.agent.md': '../../agents/helper.agent.md',
+      'com.github.copilot/commands/run.md': '../../commands/run.md',
     },
   );
   for (const [skill, file] of [['validate-manifest', 'validate-manifest.mjs'], ['validate-links', 'validate-links.mjs'], ['validate-components', 'validate-components.mjs']]) {
@@ -79,28 +81,28 @@ test('legacy layout: audit proposes moves, dry-run changes nothing, apply fixes,
       '.plugin/plugin.json': { name: 'legacy' },
     },
   );
-  const audit = run(script('plugin-compat-audit', 'aggregate.mjs'), ['--root', root]);
+  const audit = run(script('plugin-cross-audit', 'aggregate.mjs'), ['--root', root]);
   assert.equal(audit.code, 0);
   const reportPath = path.join(root, '.compat-report.json');
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
   assert.ok(ids(report).includes('canonical-misplaced'));
   assert.ok(ids(report).includes('legacy-manifest'));
 
-  const dry = run(script('plugin-compat-fix', 'fix.mjs'), ['--report', reportPath]);
+  const dry = run(script('plugin-cross-fix', 'fix.mjs'), ['--report', reportPath]);
   assert.equal(dry.code, 0);
   assert.ok(dry.out.actions.every((a) => a.status === 'planned'), JSON.stringify(dry.out.actions));
   assert.ok(fs.lstatSync(path.join(root, 'com.github.copilot/agents/helper.agent.md')).isFile());
   assert.equal(fs.existsSync(path.join(root, '.claude-plugin/plugin.json')), false);
 
-  assert.equal(run(script('plugin-compat-fix', 'fix.mjs'), ['--report', reportPath, '--apply']).code, 2);
+  assert.equal(run(script('plugin-cross-fix', 'fix.mjs'), ['--report', reportPath, '--apply']).code, 2);
 
-  const applied = run(script('plugin-compat-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm']);
+  const applied = run(script('plugin-cross-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm']);
   assert.equal(applied.code, 0, JSON.stringify(applied.out));
   assert.ok(fs.lstatSync(path.join(root, 'agents/helper.agent.md')).isFile());
   assert.equal(fs.readlinkSync(path.join(root, 'com.github.copilot/agents/helper.agent.md')), '../../agents/helper.agent.md');
   assert.equal(fs.readlinkSync(path.join(root, '.claude-plugin/plugin.json')), '../plugin.json');
 
-  const again = run(script('plugin-compat-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm']);
+  const again = run(script('plugin-cross-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm']);
   assert.ok(again.out.actions.every((a) => a.status !== 'done'), JSON.stringify(again.out.actions));
 
   const links = run(script('validate-links', 'validate-links.mjs'), ['--root', root]);
@@ -117,14 +119,14 @@ test('conflicts are reported and never overwritten', () => {
     },
     { '.claude-plugin/plugin.json': '/etc/hosts', 'com.github.copilot/commands': '../commands' },
   );
-  const audit = run(script('plugin-compat-audit', 'aggregate.mjs'), ['--root', root]);
+  const audit = run(script('plugin-cross-audit', 'aggregate.mjs'), ['--root', root]);
   assert.equal(audit.code, 1);
   const reportPath = path.join(root, '.compat-report.json');
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
   for (const id of ['duplicate-diverged', 'link-absolute', 'link-directory']) assert.ok(ids(report).includes(id), id);
 
   const before = fs.readFileSync(path.join(root, 'com.github.copilot/agents/helper.agent.md'), 'utf8');
-  const applied = run(script('plugin-compat-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm']);
+  const applied = run(script('plugin-cross-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm']);
   assert.ok([0, 5].includes(applied.code));
   assert.equal(fs.readFileSync(path.join(root, 'com.github.copilot/agents/helper.agent.md'), 'utf8'), before);
   assert.equal(fs.readlinkSync(path.join(root, '.claude-plugin/plugin.json')), '/etc/hosts');
@@ -136,11 +138,11 @@ test('identical duplicates need --replace-identical', () => {
     'agents/helper.agent.md': agent('helper'),
     'com.github.copilot/agents/helper.agent.md': agent('helper'),
   });
-  run(script('plugin-compat-audit', 'aggregate.mjs'), ['--root', root]);
+  run(script('plugin-cross-audit', 'aggregate.mjs'), ['--root', root]);
   const reportPath = path.join(root, '.compat-report.json');
-  run(script('plugin-compat-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm']);
+  run(script('plugin-cross-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm']);
   assert.ok(fs.lstatSync(path.join(root, 'com.github.copilot/agents/helper.agent.md')).isFile());
-  run(script('plugin-compat-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm', '--replace-identical']);
+  run(script('plugin-cross-fix', 'fix.mjs'), ['--report', reportPath, '--apply', '--confirm', '--replace-identical']);
   assert.ok(fs.lstatSync(path.join(root, 'com.github.copilot/agents/helper.agent.md')).isSymbolicLink());
 });
 
@@ -151,7 +153,7 @@ test('fix refuses installed copies', () => {
   fs.mkdirSync(installed, { recursive: true });
   fs.writeFileSync(path.join(installed, 'plugin.json'), JSON.stringify({ $schema: SCHEMA, name: 'x' }));
   fs.writeFileSync(reportPath, JSON.stringify({ root: installed, findings: [] }));
-  assert.equal(run(script('plugin-compat-fix', 'fix.mjs'), ['--report', reportPath], { HOME: home }).code, 4);
+  assert.equal(run(script('plugin-cross-fix', 'fix.mjs'), ['--report', reportPath], { HOME: home }).code, 4);
 });
 
 test('components: agent without name, skill name mismatch, camelCase hook', () => {
@@ -167,6 +169,20 @@ test('components: agent without name, skill name mismatch, camelCase hook', () =
   for (const id of ['agent-name-missing', 'agent-tools-namespaced', 'skill-name-dir', 'hooks-version', 'hooks-camelcase', 'root-instructions']) {
     assert.ok(ids(out).includes(id), id);
   }
+});
+
+test('repository ships the orchestrator agent and command through relative links', () => {
+  const agentPath = path.join(repo, 'agents/plugin-cross-orchestrator.agent.md');
+  const commandPath = path.join(repo, 'commands/plugin-cross.md');
+  const agentLink = path.join(repo, 'com.github.copilot/agents/plugin-cross-orchestrator.agent.md');
+  const commandLink = path.join(repo, 'com.github.copilot/commands/plugin-cross.md');
+
+  assert.match(fs.readFileSync(agentPath, 'utf8'), /^---\nname: plugin-cross-orchestrator\n/);
+  assert.match(fs.readFileSync(commandPath, 'utf8'), /plugin-cross-orchestrator/);
+  assert.ok(fs.lstatSync(agentLink).isSymbolicLink());
+  assert.equal(fs.readlinkSync(agentLink), '../../agents/plugin-cross-orchestrator.agent.md');
+  assert.ok(fs.lstatSync(commandLink).isSymbolicLink());
+  assert.equal(fs.readlinkSync(commandLink), '../../commands/plugin-cross.md');
 });
 
 test('readme badge is added once and detected afterwards', () => {

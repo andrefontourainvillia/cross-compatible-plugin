@@ -1,0 +1,1 @@
+../../agents/plugin-cross-orchestrator.agent.md
