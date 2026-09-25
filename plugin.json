@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "cross-compatible-plugin",
+  "version": "0.1.0",
+  "description": "Skills that audit and fix agent plugins so one DRY repository works in GitHub Copilot CLI, VS Code, Claude Code and OpenAI Codex.",
+  "author": { "name": "andrefontourainvillia" },
+  "repository": "https://github.com/andrefontourainvillia/cross-compatible-plugin",
+  "keywords": ["agent-plugins", "copilot", "claude-code", "codex", "vscode", "symlinks"]
+}
