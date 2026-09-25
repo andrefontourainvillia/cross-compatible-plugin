@@ -25,25 +25,17 @@ Sem caminho, o agente `plugin-cross-orchestrator` detecta a raiz mais provável 
 
 O fluxo nunca altera arquivos sem aprovação explícita:
 
-```mermaid
-flowchart LR
-  A[Auditoria] --> B[Relatório e dry-run]
-  B --> C{Aprova correções?}
-  C -- não --> D[Reauditoria]
-  C -- sim --> E[Aplicar correções]
-  E --> D
-  D --> F[Preview dos badges]
-  F --> G{Aprova README?}
-  G -- não --> H[Relatório final]
-  G -- sim --> I[Adicionar badges]
-  I --> H
-```
-
 1. **Auditoria** (`plugin-cross-audit`): roda os três validadores e grava `.compat-report.json`.
-2. **Relatório**: o agente mostra os findings por gravidade (`error`, `warning`, `info`) e as correções propostas.
-3. **Aprovação**: o agente mostra o dry-run da correção e espera um "sim" explícito.
-4. **Correção** (`plugin-cross-fix`): move os arquivos para a fonte canônica, cria links relativos por arquivo e roda a auditoria de novo.
-5. **Badges** (`readme-install-badge`): mostra um preview, confirma o repositório e pede uma nova aprovação antes de alterar o README.
+2. **Relatório e dry-run**: mostra os findings por gravidade (`error`, `warning`, `info`) e as correções propostas.
+3. **Aprovação das correções**: espera um "sim" explícito.
+    - **Sim:** `plugin-cross-fix` move os arquivos para a fonte canônica e cria links relativos por arquivo.
+    - **Não:** segue sem alterar os arquivos.
+4. **Reauditoria**: executa novamente os validadores após a decisão.
+5. **Preview dos badges** (`readme-install-badge`): confirma o repositório e mostra as alterações propostas para o README.
+6. **Aprovação do README**: espera uma nova confirmação explícita.
+    - **Sim:** adiciona os badges.
+    - **Não:** segue sem alterar o README.
+7. **Relatório final**: apresenta o estado resultante da execução.
 
 O agente e o comando têm fontes canônicas em `agents/` e `commands/`. Claude Code lê essas fontes; Copilot CLI e VS Code usam os links em `com.github.copilot/`.
 
