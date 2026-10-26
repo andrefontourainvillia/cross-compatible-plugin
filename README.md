@@ -6,8 +6,6 @@ Skills que auditam e corrigem um plugin de agente para que **um único repositó
 
 Clique no botão abaixo correspondente a sua edição do VS Code e confirme o prompt de instalação no editor.
 
-[![Instalar Marketplace de Plugins no VS Code](https://img.shields.io/badge/Instalar_Plugin_de_Chat-VS_Code-blue)](vscode://chat-plugin/add-marketplace?ref==andrefontourainvillia/cross-compatible-plugin)
-
 [![Instalar Plugin de Chat no VS Code](https://img.shields.io/badge/Instalar_Plugin_de_Chat-VS_Code-blue)](vscode://chat-plugin/install?source=andrefontourainvillia/cross-compatible-plugin&plugin=cross-compatible-plugin)
 
 [![Instalar Plugin de Chat no VS Code Insiders](https://img.shields.io/badge/Instalar_Plugin_de_Chat-VS_Code_Insiders-24BFA5)](vscode-insiders://chat-plugin/install?source=andrefontourainvillia/cross-compatible-plugin)
